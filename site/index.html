@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Транспортные свойства газовой смеси: аргон — 90%, метан — 10%, давление — 1 атм. Скорость дрейфа и диффузия электронов.">
+  <title>Транспортные свойства газа</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="core.js" defer></script>
+  <script src="format.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Транспортные свойства газа</h1>
+      <p class="conditions"><span>Газовая смесь: аргон — 90%, метан — 10%</span><span>Давление: 1 атм</span></p>
+    </header>
+
+    <form id="calculator" class="panel">
+      <div class="fields">
+        <label for="electric-field">Электрическое поле <span>E, В/см</span>
+          <input id="electric-field" name="electric_field_v_cm" type="number" value="140" min="0" step="any" required>
+        </label>
+        <label for="magnetic-field">Магнитное поле <span>B, Тл</span>
+          <input id="magnetic-field" name="magnetic_field_t" type="number" value="0.5" min="0" step="any" required>
+        </label>
+        <label for="angle">Угол между полями <span>α, °</span>
+          <input id="angle" name="angle_deg" type="number" value="0" min="0" max="180" step="any" aria-describedby="angle-note" required>
+        </label>
+        <label for="temperature">Температура газа <span>T, °C</span>
+          <input id="temperature" name="temperature_c" type="number" value="25" min="-273.15" step="any" required>
+        </label>
+      </div>
+      <p id="angle-note" class="field-note" hidden>При B = 0 угол не влияет на результат.</p>
+      <div class="length-row">
+        <label for="length">Длина дрейфа <span>L, см</span>
+          <input id="length" name="length_cm" type="number" value="165" min="0" step="any" required>
+        </label>
+        <button id="calculate" type="submit" disabled>Рассчитать</button>
+      </div>
+    </form>
+
+    <section id="result" class="panel result" aria-live="polite" aria-busy="true" aria-labelledby="result-heading">
+      <div class="result-heading"><h2 id="result-heading">Результат</h2><span id="source" class="source" data-source="Unavailable">Нет данных</span></div>
+      <div class="values">
+        <div><p class="value-label">Продольная скорость v<sub>∥</sub></p><p class="value"><output id="velocity">—</output> <span>см/мкс</span></p></div>
+        <div><p class="value-label">Время дрейфа t = L / v<sub>∥</sub></p><p class="value"><output id="drift-time">—</output> <span>мкс</span></p></div>
+      </div>
+      <p id="message" class="message">Загрузка расчётных данных…</p>
+      <p id="accuracy" class="field-note"></p>
+      <div id="transport" hidden>
+        <section id="diffusion" class="transport-section" hidden>
+          <h3>Диффузия</h3>
+          <p id="diffusion-basis" class="field-note"></p>
+          <table><thead><tr><th scope="col">Компонента</th><th scope="col">D, см²/с</th><th scope="col">σ/√s, мкм/√см</th></tr></thead><tbody id="diffusion-values"></tbody></table>
+        </section>
+        <section id="transverse" class="transport-section" hidden>
+          <h3>Поперечные компоненты скорости</h3>
+          <table><thead><tr><th scope="col">Компонента</th><th scope="col">см/мкс</th></tr></thead><tbody id="transverse-values"></tbody></table>
+        </section>
+        <section id="tensor" class="transport-section" hidden>
+          <h3>Тензор диффузии</h3>
+          <table><thead><tr><th scope="col">Компонента</th><th scope="col">см²/с</th></tr></thead><tbody id="tensor-values"></tbody></table>
+          <p id="tensor-note" class="field-note"></p>
+        </section>
+        <p id="transport-accuracy" class="field-note"></p>
+      </div>
+    </section>
+    <footer><p>Z направлена вдоль E; X и Y — поперечные оси. Экстраполяция не применяется.</p><p>Magboltz 11.19 · Эффект Пеннинга и тепловое движение газа включены.</p><p id="data-status"></p></footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,45 @@
+:root { color-scheme: light; font-family: "Segoe UI", system-ui, sans-serif; color: #182f3c; background: #f4f6f8; font-size: 16px; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 920px; margin: 0 auto; padding: 56px 24px 30px; }
+h1 { font-size: clamp(1.65rem, 4vw, 2.25rem); line-height: 1.2; font-weight: 600; margin: 0 0 12px; letter-spacing: -.025em; }
+.conditions { display: flex; flex-wrap: wrap; gap: 10px; font-size: .85rem; margin: 0 0 28px; }
+.conditions span { padding: 6px 12px; border: 1px solid #d5dfe5; border-radius: 4px; background: #fff; }
+.panel { background: #fff; border: 1px solid #d9e1e7; border-radius: 8px; padding: 26px; }
+.fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+label { display: block; font-size: .83rem; font-weight: 600; }
+label > span { display: block; color: #5a6b77; font-weight: 400; margin: 4px 0 10px; }
+input { display: block; width: 100%; font: inherit; font-variant-numeric: tabular-nums; font-size: 1.05rem; color: #182f3c; padding: 11px 12px; border: 1px solid #bac9d3; border-radius: 4px; background: #fff; }
+input:focus-visible, button:focus-visible { outline: 3px solid #96c6df; outline-offset: 2px; }
+input:disabled { color: #73838d; background: #edf1f4; }
+.field-note { font-size: .8rem; color: #61727d; line-height: 1.6; margin: 14px 0 0; }
+.length-row { display: grid; grid-template-columns: 160px 1fr; align-items: end; gap: 22px; margin-top: 24px; padding-top: 22px; border-top: 1px solid #e6ebef; }
+.length-row button { justify-self: end; }
+button { border: 0; border-radius: 4px; background: #175d7c; color: #fff; font: inherit; font-weight: 600; padding: 12px 30px; min-height: 45px; cursor: pointer; }
+button:hover { background: #114863; }
+button:disabled { cursor: wait; opacity: .55; }
+.result { margin-top: 20px; }
+.result-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 25px; }
+h2 { font-size: 1rem; font-weight: 600; margin: 0; }
+.source { font-size: .75rem; border: 1px solid #d4dfe7; border-radius: 4px; padding: 5px 9px; background: #f4f6f8; color: #596d7a; }
+.source[data-source="Magboltz"] { color: #1e654b; background: #edf7f1; border-color: #cce7d8; }
+.source[data-source="Interpolated"] { color: #1c587c; background: #edf5fa; border-color: #cfe3f0; }
+.values { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+.values > div + div { border-left: 1px solid #e6ebef; padding-left: 30px; }
+.value-label { font-size: .84rem; color: #596d7a; margin: 0 0 7px; }
+.value { font-size: clamp(1.7rem, 4vw, 2.35rem); font-variant-numeric: tabular-nums; letter-spacing: -.025em; margin: 0; line-height: 1.4; }
+.value > span { font-size: .9rem; font-weight: 400; letter-spacing: 0; color: #647681; }
+.message { margin: 22px 0 0; font-size: .86rem; line-height: 1.6; }
+.message[data-kind="error"] { color: #9a3c2e; }
+footer { margin-top: 22px; font-size: .77rem; color: #6a7c87; line-height: 1.6; }
+footer p { margin: 5px 0; }
+.transport-section { margin-top: 24px; padding-top: 22px; border-top: 1px solid #e6ebef; }
+h3 { margin: 0; font-size: .94rem; font-weight: 600; }
+table { border-collapse: collapse; width: 100%; margin-top: 14px; font-size: .9rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 10px 8px; border-bottom: 1px solid #edf0f3; vertical-align: top; }
+th { font-size: .78rem; color: #596d7a; font-weight: 600; }
+th:first-child { text-align: left; padding-left: 0; }
+td small { display: block; margin-top: 4px; color: #61727d; font-size: .72rem; font-weight: 400; }
+[hidden] { display: none !important; }
+@media (max-width: 700px) { main { padding: 30px 16px; } .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panel { padding: 20px; } .length-row { grid-template-columns: 1fr auto; gap: 16px; } }
+@media (max-width: 430px) { .fields { gap: 18px 12px; } .values { grid-template-columns: 1fr; gap: 22px; } .values > div + div { border-left: none; border-top: 1px solid #e6ebef; padding: 18px 0 0; } .length-row { grid-template-columns: 130px 1fr; } }
