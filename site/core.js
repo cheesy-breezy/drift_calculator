@@ -128,6 +128,88 @@
     return { transport: quantities, diffusion_basis: basis, tensor_status: status };
   }
 
+  function curveField(point, field) {
+    if (field === "velocity_z_um_ns") return point[field];
+    const item = point.transport?.[field], unit = field.startsWith("drift_") ? "micron/ns" : "cm2/s";
+    return item?.unit === unit ? item.value : null;
+  }
+  function curveX(coordinates, axis, transform) {
+    if (transform === "native") return Number(coordinates[axis]);
+    const temperature = Number(coordinates[3]) + 273.15;
+    if (transform === "reduced_field" || transform === "log_reduced_field") {
+      const value = Number(coordinates[0]) * temperature / (140 * 298.15);
+      return transform === "log_reduced_field" ? Math.log(value) : value;
+    }
+    if (transform === "magnetic_squared") return (Number(coordinates[1]) * temperature / 298.15) ** 2;
+    const tangent = Math.tan(Number(coordinates[2]) * Math.PI / 180);
+    return transform === "tan_squared" ? tangent ** 2 : tangent;
+  }
+  function curveSlopes(x, y, algorithm) {
+    const n = x.length;
+    const h = x.slice(1).map((value, i) => value - x[i]);
+    const s = h.map((value, i) => (y[i + 1] - y[i]) / value);
+    if (n === 2) return [s[0], s[0]];
+    if (algorithm === "hermite") {
+      const d = [((2 * h[0] + h[1]) * s[0] - h[0] * s[1]) / (h[0] + h[1])];
+      for (let i = 1; i < n - 1; i++) d.push((h[i] * s[i - 1] + h[i - 1] * s[i]) / (h[i - 1] + h[i]));
+      d.push(((2 * h[n - 2] + h[n - 3]) * s[n - 2] - h[n - 2] * s[n - 3]) / (h[n - 2] + h[n - 3]));
+      return d;
+    }
+    const d = Array(n).fill(0);
+    for (let i = 1; i < n - 1; i++) if (s[i - 1] * s[i] > 0) {
+      const w1 = 2 * h[i] + h[i - 1], w2 = h[i] + 2 * h[i - 1];
+      d[i] = (w1 + w2) / (w1 / s[i - 1] + w2 / s[i]);
+    }
+    for (const [i, a, b, sa, sb] of [[0, h[0], h[1], s[0], s[1]], [n - 1, h[n - 2], h[n - 3], s[n - 2], s[n - 3]]]) {
+      let slope = ((2 * a + b) * sa - a * sb) / (a + b);
+      if (slope * sa <= 0) slope = 0;
+      else if (sa * sb < 0 && Math.abs(slope) > 3 * Math.abs(sa)) slope = 3 * sa;
+      d[i] = slope;
+    }
+    return d;
+  }
+  function curveSpline(x, y, q, algorithm) {
+    if (x.length < 2 || q < x[0] || q > x[x.length - 1] || x.some((value, i) => i && value <= x[i - 1])) throw new Error("Invalid curve support");
+    let i = 0;
+    while (i < x.length - 2 && x[i + 1] <= q) i++;
+    const h = x[i + 1] - x[i], t = (q - x[i]) / h;
+    if (algorithm === "linear" || x.length === 2) return y[i] * (1 - t) + y[i + 1] * t;
+    const d = curveSlopes(x, y, algorithm);
+    return (2*t**3-3*t**2+1)*y[i] + (t**3-2*t**2+t)*h*d[i] + (-2*t**3+3*t**2)*y[i+1] + (t**3-t**2)*h*d[i+1];
+  }
+  function curvePredict(points, curve, coordinates) {
+    const { recipe, axis, field } = curve;
+    const x = [], y = [];
+    for (const i of curve.indices) {
+      const point = points[i];
+      let value = curveField(point, field);
+      if (!finite(value)) throw new Error("Invalid curve support");
+      x.push(curveX(point.coordinates, axis, recipe.x));
+      if (recipe.y === "log_density") value = Math.log(value / (Number(point.coordinates[3]) + 273.15));
+      else if (recipe.y === "inverse") value = 1 / value;
+      y.push(value);
+    }
+    let value = curveSpline(x, y, curveX(coordinates, axis, recipe.x), recipe.algorithm);
+    if (recipe.y === "log_density") value = Math.exp(value) * (Number(coordinates[3]) + 273.15);
+    else if (recipe.y === "inverse") value = 1 / value;
+    if (!finite(value) || (field === "velocity_z_um_ns" && value <= 0) || (field.startsWith("diffusion") && value < 0)) throw new Error("Nonphysical curve prediction");
+    return value;
+  }
+  function curveValues(context, cell, coordinates) {
+    if (cell.axes.length !== 1) return {};
+    const axis = cell.axes[0], fixed = coordinates.filter((value, i) => i !== axis), result = {};
+    for (const curve of context.curves || []) {
+      if (curve.axis !== axis || JSON.stringify(curve.fixed_coordinates) !== JSON.stringify(fixed) || !cell.corners.every(i => curve.indices.includes(i))) continue;
+      if (curve.field.startsWith("diffusion") && cell.corners.every(i => ["xx", "yy", "zz", "xy", "xz", "yz"].every(name => context.points[i].transport?.[`diffusion_${name}`]))) continue;
+      if (!curve.accuracy || (curve.recipe.method === "linear" && curve.accuracy.sample_count < 2)) continue;
+      result[curve.field] = { value: curvePredict(context.points, curve, coordinates), curve };
+    }
+    return result;
+  }
+  function curveAccuracy(curve) {
+    return Object.fromEntries(Object.entries(curve.accuracy).filter(([name]) => name !== "samples"));
+  }
+
   function evaluate(model, query, options = {}) {
     const unavailable = { source: "Unavailable", velocity_cm_us: null, drift_time_us: null,
       statistical_error_percent: null, interpolation_accuracy: null, support_run_ids: [], transport: {} };
@@ -170,16 +252,32 @@
       cell.axes.forEach((axis, i) => { weight *= point.coordinates[axis] === cell.upper[axis] ? fractions[i] : 1 - fractions[i]; });
       value += weight * point.velocity_z_um_ns;
     }
-    const velocity = value * 0.1;
+    let velocity = value * 0.1, curves;
     let time;
-    try { time = driftTime(velocity, length); }
+    try {
+      curves = curveValues(context, cell, coordinates);
+      if (curves.velocity_z_um_ns) velocity = curves.velocity_z_um_ns.value * 0.1;
+      time = driftTime(velocity, length);
+    }
     catch (_) { return { ...unavailable, reason: "invalid_velocity" }; }
     const active = cell.axes.filter(axis => compare(cell.lower[axis], coordinates[axis]) < 0 && compare(coordinates[axis], cell.upper[axis]) < 0);
     const validation = context.validation.find(item => item.region_id === cell.region_id && JSON.stringify(item.axes) === JSON.stringify(active));
-    const accuracy = validation ? Object.fromEntries(Object.entries(validation).filter(([name]) => name !== "samples")) : { method: "not_assessed", sample_count: 0, is_error_bound: false };
+    let accuracy = validation ? Object.fromEntries(Object.entries(validation).filter(([name]) => name !== "samples")) : { method: "not_assessed", sample_count: 0, is_error_bound: false };
+    let method = "multilinear";
+    if (curves.velocity_z_um_ns) {
+      accuracy = curveAccuracy(curves.velocity_z_um_ns.curve);
+      method = curves.velocity_z_um_ns.curve.recipe.method;
+    }
+    const support = new Set(cell.corners), transport = interpolateTransport(context.points, cell, coordinates);
+    for (const [field, prediction] of Object.entries(curves)) {
+      prediction.curve.indices.forEach(i => support.add(i));
+      if (transport[field]) transport[field] = { ...transport[field], value: prediction.value,
+        interpolation_method: prediction.curve.recipe.method, interpolation_accuracy: curveAccuracy(prediction.curve) };
+    }
     return { source: "Interpolated", velocity_cm_us: velocity, drift_time_us: time, statistical_error_percent: null,
-      interpolation_accuracy: accuracy, support_run_ids: cell.corners.map(i => context.points[i].run_id), coordinates, cell,
-      ...finishTransport(interpolateTransport(context.points, cell, coordinates), coordinates, velocity) };
+      interpolation_accuracy: accuracy, interpolation_method: method,
+      support_run_ids: [...support].sort((a, b) => a - b).map(i => context.points[i].run_id), coordinates, cell,
+      ...finishTransport(transport, coordinates, velocity) };
   }
   return { AXES, canonical, compare, normalizeQuery, driftTime, evaluate };
 });

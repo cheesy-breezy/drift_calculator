@@ -24,7 +24,9 @@
       if (!item) { td.textContent = "—"; return td; }
       td.textContent = format(item.value);
       const note = document.createElement("small");
-      note.textContent = item.statistical_error_percent !== null ? `±${percent(item.statistical_error_percent)}%` : "погрешность не оценена";
+      note.textContent = item.statistical_error_percent !== null ? `±${percent(item.statistical_error_percent)}%`
+        : item.interpolation_accuracy?.sample_count >= 2 ? `проверка интерполяции: макс. ${percent(item.interpolation_accuracy.max_relative_error_percent)}%`
+        : "погрешность не оценена";
       td.append(note);
       return td;
     }
@@ -59,7 +61,7 @@
       : negative ? "" : "Dᵢⱼ = Dⱼᵢ. Показаны имеющиеся компоненты тензора.";
     tensorNote.hidden = !tensorNote.textContent;
     document.getElementById("transport-accuracy").textContent = current?.source === "Interpolated"
-      ? "Диффузия и поперечные скорости интерполируются только при наличии всех опорных значений. Их точность ещё не оценена; проверка продольной скорости на них не распространяется."
+      ? "Каждая величина проверяется отдельно с исключением опорных точек. Эти оценки не являются гарантированной погрешностью; проверка скорости не переносится на диффузию."
       : "±% — статистическая погрешность из Magboltz. Для дополнительно вычисленных величин без собственной оценки она не указана.";
   }
 
@@ -136,6 +138,10 @@
       accuracy.textContent = info && info.sample_count > 0
         ? `Проверка с исключением точек: ${info.sample_count}; максимальное наблюдаемое отклонение ${percent(info.max_relative_error_percent)}%. Это не гарантированная погрешность.`
         : "Точность интерполяции в этой области ещё не оценена.";
+      if (info?.used_for_model_selection && info.sample_count > 0) {
+        accuracy.textContent += " Эти точки также использованы для выбора метода.";
+        if (info.max_support_gap_factor > 1) accuracy.textContent += " При исключении точки расстояние между опорами увеличивалось.";
+      }
     }
     updateTime();
   }
