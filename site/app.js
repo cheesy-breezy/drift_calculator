@@ -12,15 +12,9 @@
   const length = document.getElementById("length");
   const physicalInputs = ["electric-field", "magnetic-field", "angle", "temperature"].map(id => document.getElementById(id));
   const format = MagboltzDisplay.number;
-  const percent = value => format(value, null, 2);
+  const percent = value => format(value, 2);
   let model = null, current = null;
 
-  function velocityError() {
-    return current.source === "Magboltz" ? current.statistical_error_percent : current.interpolation_accuracy?.max_relative_error_percent;
-  }
-  function velocityDigits() {
-    return current.source === "Interpolated" && !current.interpolation_accuracy?.sample_count ? 3 : 4;
-  }
   function renderTransport() {
     const data = current?.transport || {};
     const diffusion = document.getElementById("diffusion-values"), transverse = document.getElementById("transverse-values"), tensor = document.getElementById("tensor-values");
@@ -28,8 +22,7 @@
     function cell(item) {
       const td = document.createElement("td");
       if (!item) { td.textContent = "—"; return td; }
-      const digits = current.source === "Interpolated" || item.statistical_error_percent === null ? 3 : 4;
-      td.textContent = format(item.value, item.statistical_error_percent, digits);
+      td.textContent = format(item.value);
       const note = document.createElement("small");
       note.textContent = item.statistical_error_percent !== null ? `±${percent(item.statistical_error_percent)}%` : "погрешность не оценена";
       td.append(note);
@@ -96,7 +89,7 @@
     length.setCustomValidity("");
     if (!current || current.velocity_cm_us === null) return;
     try {
-      driftTime.textContent = format(MagboltzCore.driftTime(current.velocity_cm_us, length.value), velocityError(), velocityDigits());
+      driftTime.textContent = format(MagboltzCore.driftTime(current.velocity_cm_us, length.value));
       length.setCustomValidity("");
       setMessage(current.source === "Magboltz" ? "Непосредственный результат Magboltz." : "Локальная интерполяция по опорным расчётам.");
       if (current.provenance_warning) setMessage("Полный результат Magboltz проверен; исходный процесс завершился с ошибкой чтения после вывода результата.");
@@ -135,7 +128,7 @@
       setMessage(current.reason === "outside_supported_cells" ? coverageMessage(query) : reasons[current.reason] || "Численный результат недоступен.", true);
       return;
     }
-    velocity.textContent = format(current.velocity_cm_us, velocityError(), velocityDigits());
+    velocity.textContent = format(current.velocity_cm_us);
     if (current.source === "Magboltz" && current.statistical_error_percent !== null) {
       accuracy.textContent = `Статистическая погрешность скорости Magboltz: ±${percent(current.statistical_error_percent)}%.`;
     } else if (current.source === "Interpolated") {
