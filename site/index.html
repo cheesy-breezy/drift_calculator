@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Транспортные свойства газовой смеси: аргон — 90%, метан — 10%, давление — 1 атм. Скорость дрейфа и диффузия электронов.">
   <title>Транспортные свойства газа</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="core.js?v=physical-curves-1" defer></script>
+  <link rel="stylesheet" href="styles.css?v=interpolation-formulas-1">
+  <script src="core.js?v=interpolation-formulas-1" defer></script>
   <script src="format.js?v=5-significant-digits" defer></script>
-  <script src="app.js?v=physical-curves-1" defer></script>
+  <script src="formulas.js?v=interpolation-formulas-1" defer></script>
+  <script src="app.js?v=interpolation-formulas-1" defer></script>
 </head>
 <body>
   <main>
@@ -44,7 +45,7 @@
     <section id="result" class="panel result" aria-live="polite" aria-busy="true" aria-labelledby="result-heading">
       <div class="result-heading"><h2 id="result-heading">Результат</h2><span id="source" class="source" data-source="Unavailable">Нет данных</span></div>
       <div class="values">
-        <div><p class="value-label">Продольная скорость v<sub>∥</sub></p><p class="value"><output id="velocity">—</output> <span>см/мкс</span></p></div>
+        <div><p class="value-label">Продольная скорость v<sub>∥</sub><span id="velocity-formula"></span></p><p class="value"><output id="velocity">—</output> <span>см/мкс</span></p></div>
         <div><p class="value-label">Время дрейфа t = L / v<sub>∥</sub></p><p class="value"><output id="drift-time">—</output> <span>мкс</span></p></div>
       </div>
       <p id="message" class="message">Загрузка расчётных данных…</p>

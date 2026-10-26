@@ -14,15 +14,81 @@
   const format = MagboltzDisplay.number;
   const percent = value => format(value, 2);
   let model = null, current = null;
+  const tooltip = document.createElement("div");
+  tooltip.id = "interpolation-tooltip"; tooltip.className = "formula-tooltip";
+  tooltip.setAttribute("role", "tooltip"); tooltip.hidden = true;
+  document.body.append(tooltip);
+  let tooltipButton = null, closeTimer;
+  function hideTooltip() {
+    clearTimeout(closeTimer);
+    if (tooltipButton) {
+      tooltipButton.removeAttribute("aria-describedby");
+      tooltipButton.setAttribute("aria-expanded", "false");
+    }
+    tooltipButton = null; tooltip.hidden = true;
+  }
+  function positionTooltip() {
+    if (!tooltipButton) return;
+    const anchor = tooltipButton.getBoundingClientRect(), box = tooltip.getBoundingClientRect();
+    if (anchor.bottom < 0 || anchor.top > window.innerHeight) { hideTooltip(); return; }
+    tooltip.style.left = `${Math.max(12, Math.min(anchor.left, window.innerWidth - box.width - 12))}px`;
+    const top = anchor.bottom + 8 + box.height <= window.innerHeight - 12 ? anchor.bottom + 8 : anchor.top - box.height - 8;
+    tooltip.style.top = `${Math.max(12, Math.min(top, window.innerHeight - box.height - 12))}px`;
+  }
+  function formulaButton(field) {
+    const description = MagboltzFormulas.describe(current, field);
+    if (!description) return null;
+    const info = document.createElement("button");
+    info.type = "button"; info.className = "formula-trigger"; info.textContent = "i";
+    info.dataset.field = field;
+    info.setAttribute("aria-label", "Показать формулу интерполяции");
+    info.setAttribute("aria-controls", tooltip.id); info.setAttribute("aria-expanded", "false");
+    function show() {
+      hideTooltip(); tooltipButton = info;
+      const title = document.createElement("strong"); title.textContent = description.title;
+      tooltip.replaceChildren(title);
+      for (const [className, lines] of [["formula-equation", description.lines], ["formula-note", description.notes]]) {
+        for (const text of lines) {
+          const line = document.createElement("p"); line.className = className; line.textContent = text;
+          tooltip.append(line);
+        }
+      }
+      info.setAttribute("aria-describedby", tooltip.id); info.setAttribute("aria-expanded", "true");
+      tooltip.scrollTop = 0; tooltip.hidden = false; positionTooltip();
+    }
+    info.addEventListener("pointerenter", show);
+    info.addEventListener("focus", show);
+    info.addEventListener("click", show);
+    info.addEventListener("pointerleave", () => { if (document.activeElement !== info) closeTimer = setTimeout(hideTooltip, 180); });
+    info.addEventListener("blur", () => {
+      closeTimer = setTimeout(() => { if (!tooltip.matches(":hover")) hideTooltip(); }, 180);
+    });
+    return info;
+  }
+  tooltip.addEventListener("pointerenter", () => clearTimeout(closeTimer));
+  tooltip.addEventListener("pointerleave", () => { if (document.activeElement !== tooltipButton) closeTimer = setTimeout(hideTooltip, 180); });
+  document.addEventListener("keydown", event => { if (event.key === "Escape") hideTooltip(); });
+  document.addEventListener("pointerdown", event => {
+    if (!tooltip.contains(event.target) && !tooltipButton?.contains(event.target)) hideTooltip();
+  });
+  window.addEventListener("resize", positionTooltip);
+  document.addEventListener("scroll", positionTooltip, true);
 
   function renderTransport() {
+    hideTooltip();
+    const velocityFormula = document.getElementById("velocity-formula");
+    velocityFormula.replaceChildren();
+    const info = formulaButton("velocity_z_um_ns");
+    if (info) velocityFormula.append(info);
     const data = current?.transport || {};
     const diffusion = document.getElementById("diffusion-values"), transverse = document.getElementById("transverse-values"), tensor = document.getElementById("tensor-values");
     [diffusion, transverse, tensor].forEach(body => body.replaceChildren());
-    function cell(item) {
+    function cell(item, field) {
       const td = document.createElement("td");
       if (!item) { td.textContent = "—"; return td; }
       td.textContent = format(item.value);
+      const info = formulaButton(field);
+      if (info) td.append(info);
       const note = document.createElement("small");
       note.textContent = item.statistical_error_percent !== null ? `±${percent(item.statistical_error_percent)}%`
         : item.interpolation_accuracy?.sample_count >= 2 ? `проверка интерполяции: макс. ${percent(item.interpolation_accuracy.max_relative_error_percent)}%`
@@ -30,20 +96,20 @@
       td.append(note);
       return td;
     }
-    function row(body, label, items) {
+    function row(body, label, fields) {
       const tr = document.createElement("tr"), heading = document.createElement("th");
       heading.scope = "row"; heading.innerHTML = label; tr.append(heading);
-      items.forEach(item => tr.append(cell(item))); body.append(tr);
+      fields.forEach(field => tr.append(cell(data[field], field))); body.append(tr);
     }
     for (const [axis, label] of [["longitudinal", "Продольная D<sub>L</sub>"], ["transverse", "Поперечная D<sub>T</sub>"]]) {
       const name = `diffusion_${axis}`;
-      if (data[name] || data[`${name}_spread`]) row(diffusion, label, [data[name], data[`${name}_spread`]]);
+      if (data[name] || data[`${name}_spread`]) row(diffusion, label, [name, `${name}_spread`]);
     }
-    for (const axis of ["x", "y"]) if (data[`drift_${axis}`]) row(transverse, `v<sub>${axis}</sub>`, [data[`drift_${axis}`]]);
+    for (const axis of ["x", "y"]) if (data[`drift_${axis}`]) row(transverse, `v<sub>${axis}</sub>`, [`drift_${axis}`]);
     for (const axis of ["xx", "yy", "zz", "xy", "xz", "yz"]) {
       if (!data[`diffusion_${axis}`]) continue;
       const label = `D<sub>${axis}</sub>` + (axis[0] === axis[1] ? "" : ` = D<sub>${axis[1]}${axis[0]}</sub>`);
-      row(tensor, label, [data[`diffusion_${axis}`]]);
+      row(tensor, label, [`diffusion_${axis}`]);
     }
     document.getElementById("diffusion").hidden = !diffusion.children.length;
     document.getElementById("transverse").hidden = !transverse.children.length;

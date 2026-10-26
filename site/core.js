@@ -263,19 +263,22 @@
     const active = cell.axes.filter(axis => compare(cell.lower[axis], coordinates[axis]) < 0 && compare(coordinates[axis], cell.upper[axis]) < 0);
     const validation = context.validation.find(item => item.region_id === cell.region_id && JSON.stringify(item.axes) === JSON.stringify(active));
     let accuracy = validation ? Object.fromEntries(Object.entries(validation).filter(([name]) => name !== "samples")) : { method: "not_assessed", sample_count: 0, is_error_bound: false };
-    let method = "multilinear";
+    let method = "multilinear", recipe = null;
     if (curves.velocity_z_um_ns) {
       accuracy = curveAccuracy(curves.velocity_z_um_ns.curve);
       method = curves.velocity_z_um_ns.curve.recipe.method;
+      recipe = { ...curves.velocity_z_um_ns.curve.recipe, axis: curves.velocity_z_um_ns.curve.axis };
     }
     const support = new Set(cell.corners), transport = interpolateTransport(context.points, cell, coordinates);
     for (const [field, prediction] of Object.entries(curves)) {
       prediction.curve.indices.forEach(i => support.add(i));
       if (transport[field]) transport[field] = { ...transport[field], value: prediction.value,
-        interpolation_method: prediction.curve.recipe.method, interpolation_accuracy: curveAccuracy(prediction.curve) };
+        interpolation_method: prediction.curve.recipe.method,
+        interpolation_recipe: { ...prediction.curve.recipe, axis: prediction.curve.axis },
+        interpolation_accuracy: curveAccuracy(prediction.curve) };
     }
     return { source: "Interpolated", velocity_cm_us: velocity, drift_time_us: time, statistical_error_percent: null,
-      interpolation_accuracy: accuracy, interpolation_method: method,
+      interpolation_accuracy: accuracy, interpolation_method: method, interpolation_recipe: recipe,
       support_run_ids: [...support].sort((a, b) => a - b).map(i => context.points[i].run_id), coordinates, cell,
       ...finishTransport(transport, coordinates, velocity) };
   }

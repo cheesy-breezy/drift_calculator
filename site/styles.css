@@ -40,6 +40,12 @@ th, td { text-align: right; padding: 10px 8px; border-bottom: 1px solid #edf0f3;
 th { font-size: .78rem; color: #596d7a; font-weight: 600; }
 th:first-child { text-align: left; padding-left: 0; }
 td small { display: block; margin-top: 4px; color: #61727d; font-size: .72rem; font-weight: 400; }
+.formula-trigger { display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; min-height: 21px; margin-left: 7px; padding: 0; border: 1px solid #a9c6d5; border-radius: 50%; background: #edf5fa; color: #175d7c; font: italic 600 .8rem Georgia, serif; vertical-align: middle; cursor: help; }
+.formula-trigger:hover, .formula-trigger[aria-expanded="true"] { background: #dceef7; color: #114863; }
+.formula-tooltip { position: fixed; z-index: 10; width: 480px; max-width: calc(100vw - 24px); max-height: min(560px, calc(100dvh - 24px)); overflow-y: auto; padding: 18px 20px; border: 1px solid #b9cdd9; border-radius: 7px; background: #fff; box-shadow: 0 6px 26px #182f3c26; color: #182f3c; font-size: .83rem; line-height: 1.6; text-align: left; overflow-wrap: anywhere; }
+.formula-tooltip strong { display: block; margin-bottom: 10px; font-weight: 600; }
+.formula-equation { font-family: "Cambria Math", "Segoe UI", sans-serif; font-size: .9rem; margin: 3px 0; white-space: pre-wrap; }
+.formula-note { color: #596d7a; font-size: .77rem; margin: 9px 0 0; }
 [hidden] { display: none !important; }
 @media (max-width: 700px) { main { padding: 30px 16px; } .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panel { padding: 20px; } .length-row { grid-template-columns: 1fr auto; gap: 16px; } }
 @media (max-width: 430px) { .fields { gap: 18px 12px; } .values { grid-template-columns: 1fr; gap: 22px; } .values > div + div { border-left: none; border-top: 1px solid #e6ebef; padding: 18px 0 0; } .length-row { grid-template-columns: 130px 1fr; } }
