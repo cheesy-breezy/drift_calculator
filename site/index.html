@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Транспортные свойства газовой смеси: аргон — 90%, метан — 10%, давление — 1 атм. Скорость дрейфа и диффузия электронов.">
   <title>Транспортные свойства газа</title>
-  <link rel="stylesheet" href="styles.css?v=interpolation-formulas-1">
+  <link rel="stylesheet" href="styles.css?v=charts-1">
   <script src="core.js?v=interpolation-formulas-1" defer></script>
   <script src="format.js?v=5-significant-digits" defer></script>
   <script src="formulas.js?v=interpolation-formulas-1" defer></script>
-  <script src="app.js?v=interpolation-formulas-1" defer></script>
+  <script src="chart-data.js?v=charts-1" defer></script>
+  <script src="charts.js?v=charts-1" defer></script>
+  <script src="app.js?v=charts-1" defer></script>
 </head>
 <body>
   <main>
@@ -67,6 +69,28 @@
         </section>
         <p id="transport-accuracy" class="field-note"></p>
       </div>
+    </section>
+    <section id="charts" class="panel charts" aria-labelledby="charts-heading">
+      <h2 id="charts-heading">Графики</h2>
+      <p class="field-note chart-intro">Задайте диапазон одного параметра для одной кривой или двух параметров для семейства из пяти кривых.</p>
+      <form id="chart-form">
+        <div class="chart-selects">
+          <label for="chart-quantity">Величина<select id="chart-quantity" name="quantity"></select></label>
+          <label for="chart-x">Параметр по оси X<select id="chart-x" name="x_axis"></select></label>
+          <label for="chart-family">Семейство кривых<select id="chart-family" name="series_axis"><option value="">Одна кривая</option></select></label>
+        </div>
+        <div id="chart-parameters" class="chart-parameters"></div>
+        <p id="chart-family-note" class="field-note" hidden>Ровно пять значений второго параметра, равномерно от начала до конца диапазона включительно.</p>
+        <div class="chart-actions">
+          <button id="chart-copy" class="secondary" type="button" disabled>Взять фиксированные параметры сверху</button>
+          <button id="chart-build" type="submit" disabled>Построить график</button>
+          <button id="chart-csv" class="secondary" type="button" disabled>Скачать CSV</button>
+        </div>
+      </form>
+      <p id="chart-status" class="message" role="status">Загрузка расчётных данных…</p>
+      <p id="chart-conditions" class="field-note" hidden></p>
+      <div id="transport-chart" class="transport-chart" role="img" aria-label="График транспортного свойства газа" hidden></div>
+      <p id="chart-key" class="field-note" hidden>Точки — расчёты Magboltz; между ними — интерполяция. Участки без данных показаны разрывами. Масштаб меняется выделением области; двойной щелчок возвращает исходный вид.</p>
     </section>
     <footer><p>Z направлена вдоль E; X и Y — поперечные оси. Экстраполяция не применяется.</p><p>Magboltz 11.19 · Эффект Пеннинга и тепловое движение газа включены.</p><p id="data-status"></p></footer>
   </main>

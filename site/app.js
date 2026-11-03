@@ -225,7 +225,9 @@
     document.getElementById("data-status").textContent = `Данные: ${context ? context.points.length : 0} опорных точек P10 · экспорт ${date}.`;
     button.disabled = false;
     calculate();
+    document.dispatchEvent(new CustomEvent("magboltz:model-ready", { detail: model }));
   } catch (_) {
+    document.dispatchEvent(new Event("magboltz:model-error"));
     setMessage("Не удалось загрузить данные. Для локального запуска используйте python -m http.server 8000 --directory site и откройте http://localhost:8000.", true);
   } finally {
     document.getElementById("result").setAttribute("aria-busy", "false");
